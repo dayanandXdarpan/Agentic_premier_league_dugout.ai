@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+.env
+.env.local
+.git
+.gitignore
+*.md
+credentials.json
+*-key.json
