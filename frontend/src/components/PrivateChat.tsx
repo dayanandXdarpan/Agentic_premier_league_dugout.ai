@@ -31,7 +31,7 @@ export const PrivateChat: React.FC = () => {
           return [...prev, payload.new as ChatMessage];
         });
       }).subscribe();
-      return () => { supabase.removeChannel(channel); };
+      return () => { supabase!.removeChannel(channel); };
     } else {
       const bc = new BroadcastChannel(`dugout_room_${roomCode}`);
       bc.onmessage = (event) => {

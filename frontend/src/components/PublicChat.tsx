@@ -89,7 +89,7 @@ export const PublicChat: React.FC = () => {
           return [...prev.slice(-80), payload.new as ChatMessage];
         });
       }).subscribe();
-      return () => { supabase.removeChannel(channel); };
+      return () => { supabase!.removeChannel(channel); };
     } else {
       const bc = new BroadcastChannel('dugout_public_chat');
       bc.onmessage = (event) => {
