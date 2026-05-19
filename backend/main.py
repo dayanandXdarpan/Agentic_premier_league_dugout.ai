@@ -259,17 +259,31 @@ def health():
 # ============================================
 
 import os as _os
-_dist = _os.path.join(_os.path.dirname(__file__), "frontend", "dist")
+
+# Path: /app/frontend/dist  (set by Dockerfile COPY --from=frontend-build)
+_dist = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "frontend", "dist")
 _assets = _os.path.join(_dist, "assets")
 
-if _os.path.isdir(_dist):
-    if _os.path.isdir(_assets):
-        app.mount("/assets", StaticFiles(directory=_assets), name="assets")
+logger.info(f"🗂️  React dist path: {_dist} — exists: {_os.path.isdir(_dist)}")
 
-    @app.get("/{catchall:path}")
-    async def serve_react_app(catchall: str):
-        """Catch-all: serve React index.html for all non-API routes (SPA routing)."""
-        index = _os.path.join(_dist, "index.html")
+if _os.path.isdir(_assets):
+    app.mount("/assets", StaticFiles(directory=_assets), name="assets")
+    logger.info("✅ /assets static mount registered")
+
+if _os.path.isdir(_dist):
+    app.mount("/icons", StaticFiles(directory=_os.path.join(_dist)), name="icons")
+
+
+@app.get("/{catchall:path}")
+async def serve_react_app(catchall: str):
+    """Catch-all: serve React index.html for all non-API routes (SPA routing)."""
+    index = _os.path.join(_dist, "index.html")
+    if _os.path.isfile(index):
         return FileResponse(index)
-else:
-    logger.warning("React dist/ not found — frontend not being served. Run 'npm run build' first.")
+    # dist not built yet — return a helpful message instead of 500
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        {"error": "Frontend not built", "hint": "Run npm run build in /frontend"},
+        status_code=503,
+    )
+
