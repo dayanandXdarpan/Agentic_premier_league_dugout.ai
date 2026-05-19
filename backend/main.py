@@ -24,6 +24,8 @@ from datetime import datetime
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
@@ -224,9 +226,9 @@ def get_match_state():
 # HEALTH CHECK WITH DIAGNOSTICS
 # ============================================
 
-@app.get("/")
+@app.get("/api/diagnostics")
 def read_root():
-    """Health check with system diagnostics."""
+    """Full system diagnostics — moved from / so root serves the React app."""
     from agent import _init_mode
     return {
         "status": "ok",
@@ -249,3 +251,25 @@ def read_root():
 def health():
     """Simple health check for Cloud Run."""
     return {"status": "ok"}
+
+
+# ============================================
+# REACT FRONTEND — Static Files + SPA Catch-all
+# (Must be LAST — after all /api routes)
+# ============================================
+
+import os as _os
+_dist = _os.path.join(_os.path.dirname(__file__), "frontend", "dist")
+_assets = _os.path.join(_dist, "assets")
+
+if _os.path.isdir(_dist):
+    if _os.path.isdir(_assets):
+        app.mount("/assets", StaticFiles(directory=_assets), name="assets")
+
+    @app.get("/{catchall:path}")
+    async def serve_react_app(catchall: str):
+        """Catch-all: serve React index.html for all non-API routes (SPA routing)."""
+        index = _os.path.join(_dist, "index.html")
+        return FileResponse(index)
+else:
+    logger.warning("React dist/ not found — frontend not being served. Run 'npm run build' first.")
